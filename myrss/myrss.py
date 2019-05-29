@@ -53,7 +53,7 @@ def application(environ, start_response):
     path = urlparse.urlsplit(uri).path
     if path.startswith('/gazzetta'):
         feed = Gazzetta()
-    elif path.starstwith('/corriere'):
+    elif path.startswith('/corriere'):
         feed = Corriere()
     else:
         start_response('404 Not Found', [])
