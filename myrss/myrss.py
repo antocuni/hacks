@@ -18,9 +18,9 @@ class AbstractFeed(object):
     def filter(self, content):
         raise NotImplementedError
 
-class Gazzetta(AbstractFeed):
 
-    URL = 'https://www.gazzetta.it/rss/home.xml'
+class FilterHosts(AbstractFeed):
+    ALLOWED_HOSTS = frozenset()
 
     def filter(self, content):
         rss = etree.fromstring(content)
@@ -28,10 +28,23 @@ class Gazzetta(AbstractFeed):
             link = item.find('link')
             if link is None:
                 continue
-            if link.text.startswith('http'):
+            parts = urlparse.urlsplit(link.text)
+            if parts.netloc not in self.ALLOWED_HOSTS:
                 item.getparent().remove(item)
         return etree.tostring(rss, pretty_print=True, xml_declaration=True,
                               encoding='UTF-8')
+
+
+
+class Gazzetta(FilterHosts):
+    URL = 'https://www.gazzetta.it/rss/home.xml'
+     # '' means "allow only links which do NOT specify an external site"
+    ALLOWED_HOSTS = frozenset(['', 'gazzetta.it', 'www.gazzetta.it'])
+
+
+class Corriere(FilterHosts):
+    URL = 'https://www.corriere.it/rss/homepage.xml'
+    ALLOWED_HOSTS = frozenset(['', 'corriere.it', 'www.corriere.it'])
 
 
 # WSGI-compatible entry point
@@ -40,6 +53,8 @@ def application(environ, start_response):
     path = urlparse.urlsplit(uri).path
     if path.startswith('/gazzetta'):
         feed = Gazzetta()
+    elif path.starstwith('/corriere'):
+        feed = Corriere()
     else:
         start_response('404 Not Found', [])
         return ['Not found: %s' % path]
@@ -51,7 +66,8 @@ def application(environ, start_response):
 
 # only useful for debugging/development
 def main():
-    feed = Gazzetta()
+    #feed = Gazzetta()
+    feed = Corriere()
     headers, content = feed.fetch_and_filter()
     for key, value in headers:
         print '%s: %s' % (key, value)
