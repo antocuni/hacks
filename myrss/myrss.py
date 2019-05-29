@@ -13,7 +13,7 @@ class AbstractFeed(object):
         headers = []
         for header in ('Content-Type', 'Date', 'Expires', 'Cache-Control'):
             headers.append((header, resp.headers[header]))
-        return headers, self.filter(resp.text.encode('utf-8'))
+        return headers, self.filter(resp.content)
 
     def filter(self, content):
         raise NotImplementedError
