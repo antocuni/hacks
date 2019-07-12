@@ -12,7 +12,8 @@ class AbstractFeed(object):
         resp.raise_for_status()
         headers = []
         for header in ('Content-Type', 'Date', 'Expires', 'Cache-Control'):
-            headers.append((header, resp.headers[header]))
+            if header in resp.headers:
+                headers.append((header, resp.headers[header]))
         return headers, self.filter(resp.content)
 
     def filter(self, content):
