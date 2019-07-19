@@ -27,7 +27,7 @@ class FilterHosts(AbstractFeed):
         rss = etree.fromstring(content)
         for item in rss.xpath("//item"):
             link = item.find('link')
-            if link is None:
+            if link is None or link.text is None:
                 continue
             parts = urlparse.urlsplit(link.text)
             if parts.netloc not in self.ALLOWED_HOSTS:
