@@ -22,6 +22,7 @@ class AbstractFeed(object):
 
 class FilterHosts(AbstractFeed):
     ALLOWED_HOSTS = frozenset()
+    FORBIDDEN_PATHS = []
 
     def filter(self, content):
         rss = etree.fromstring(content)
@@ -30,11 +31,18 @@ class FilterHosts(AbstractFeed):
             if link is None or link.text is None:
                 continue
             parts = urlparse.urlsplit(link.text)
-            if parts.netloc not in self.ALLOWED_HOSTS:
+            if (parts.netloc not in self.ALLOWED_HOSTS or
+                self.is_forbidden(parts.path)):
                 item.getparent().remove(item)
         return etree.tostring(rss, pretty_print=True, xml_declaration=True,
                               encoding='UTF-8')
 
+    def is_forbidden(self, path):
+        path = path.lower()
+        for forbidden_path in self.FORBIDDEN_PATHS:
+            if path.startswith(forbidden_path):
+                return True
+        return False
 
 
 class Gazzetta(FilterHosts):
@@ -46,6 +54,8 @@ class Gazzetta(FilterHosts):
 class Corriere(FilterHosts):
     URL = 'https://www.corriere.it/rss/homepage.xml'
     ALLOWED_HOSTS = frozenset(['', 'corriere.it', 'www.corriere.it'])
+    FORBIDDEN_PATHS = ['/moda/', '/spettacoli/', '/video-articoli/', '/animali/']
+
 
 
 # WSGI-compatible entry point
