@@ -23,6 +23,7 @@ class AbstractFeed(object):
 class FilterHosts(AbstractFeed):
     ALLOWED_HOSTS = frozenset()
     FORBIDDEN_PATHS = []
+    ALLOWED_PATHS = [''] # by default, allows everything
 
     def filter(self, content):
         rss = etree.fromstring(content)
@@ -32,15 +33,16 @@ class FilterHosts(AbstractFeed):
                 continue
             parts = urlparse.urlsplit(link.text)
             if (parts.netloc not in self.ALLOWED_HOSTS or
-                self.is_forbidden(parts.path)):
+                self.match(parts.path, self.FORBIDDEN_PATHS) or
+                not self.match(parts.path, self.ALLOWED_PATHS)):
                 item.getparent().remove(item)
         return etree.tostring(rss, pretty_print=True, xml_declaration=True,
                               encoding='UTF-8')
 
-    def is_forbidden(self, path):
+    def match(self, path, pathlist):
         path = path.lower()
-        for forbidden_path in self.FORBIDDEN_PATHS:
-            if path.startswith(forbidden_path):
+        for p in pathlist:
+            if path.startswith(p):
                 return True
         return False
 
@@ -49,6 +51,12 @@ class Gazzetta(FilterHosts):
     URL = 'https://www.gazzetta.it/rss/home.xml'
      # '' means "allow only links which do NOT specify an external site"
     ALLOWED_HOSTS = frozenset(['', 'gazzetta.it', 'www.gazzetta.it'])
+
+class GazzettaNBA(Gazzetta):
+    ALLOWED_PATHS = ['/nba/', '/basket/nba/']
+
+class GazzettaNoNBA(Gazzetta):
+    FORBIDDEN_PATHS = ['/nba/', '/basket/nba']
 
 
 class Corriere(FilterHosts):
@@ -62,7 +70,11 @@ class Corriere(FilterHosts):
 def application(environ, start_response):
     uri = util.request_uri(environ)
     path = urlparse.urlsplit(uri).path
-    if path.startswith('/gazzetta'):
+    if path.startswith('/gazzetta/nba'):
+        feed = GazzettaNBA()
+    elif path.startswith('/gazzetta/nonba'):
+        feed = GazzettaNoNBA()
+    elif path.startswith('/gazzetta'):
         feed = Gazzetta()
     elif path.startswith('/corriere'):
         feed = Corriere()
@@ -78,7 +90,8 @@ def application(environ, start_response):
 # only useful for debugging/development
 def main():
     #feed = Gazzetta()
-    feed = Corriere()
+    #feed = Corriere()
+    feed = GazzettaNBA()
     headers, content = feed.fetch_and_filter()
     for key, value in headers:
         print '%s: %s' % (key, value)
