@@ -58,12 +58,27 @@ class GazzettaNBA(Gazzetta):
 class GazzettaNoNBA(Gazzetta):
     FORBIDDEN_PATHS = ['/nba/', '/basket/nba']
 
-
 class Corriere(FilterHosts):
     URL = 'https://www.corriere.it/rss/homepage.xml'
     ALLOWED_HOSTS = frozenset(['', 'corriere.it', 'www.corriere.it'])
     FORBIDDEN_PATHS = ['/moda/', '/spettacoli/', '/video-articoli/', '/animali/']
 
+
+class SkySportNBA(AbstractFeed):
+    URL = 'http://feeds.feedburner.com/SkyitSport'
+
+    def filter(self, content):
+        rss = etree.fromstring(content)
+        for item in rss.xpath("//item"):
+            link = item.find('guid')
+            if link is None or link.text is None:
+                continue
+            print link.text
+            parts = urlparse.urlsplit(link.text)
+            if not parts.path.startswith('/nba'):
+                item.getparent().remove(item)
+        return etree.tostring(rss, pretty_print=True, xml_declaration=True,
+                              encoding='UTF-8')
 
 
 # WSGI-compatible entry point
@@ -78,6 +93,8 @@ def application(environ, start_response):
         feed = Gazzetta()
     elif path.startswith('/corriere'):
         feed = Corriere()
+    elif path.startswith('/skysport/nba'):
+        feed = SkySportNBA()
     else:
         start_response('404 Not Found', [])
         return ['Not found: %s' % path]
@@ -91,7 +108,8 @@ def application(environ, start_response):
 def main():
     #feed = Gazzetta()
     #feed = Corriere()
-    feed = GazzettaNBA()
+    #feed = GazzettaNBA()
+    feed = SkySportNBA()
     headers, content = feed.fetch_and_filter()
     for key, value in headers:
         print '%s: %s' % (key, value)
