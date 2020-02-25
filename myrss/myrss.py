@@ -63,22 +63,38 @@ class Corriere(FilterHosts):
     ALLOWED_HOSTS = frozenset(['', 'corriere.it', 'www.corriere.it'])
     FORBIDDEN_PATHS = ['/moda/', '/spettacoli/', '/video-articoli/', '/animali/']
 
+def writefile(fname, content):
+    with open(fname, 'wb') as f:
+        f.write(content)
 
 class SkySportNBA(AbstractFeed):
     URL = 'http://feeds.feedburner.com/SkyitSport'
 
     def filter(self, content):
+        #writefile('/containers/30226/tmp/input.xml', content)
         rss = etree.fromstring(content)
+
+        # remove the Atom10 links, else inoreader subscribes to updates and
+        # get non-filtered articles
+        ns = {"atom10": "http://www.w3.org/2005/Atom"}
+        for item in rss.xpath('//atom10:link', namespaces=ns):
+            item.getparent().remove(item)
+
+        # filter the actual content
         for item in rss.xpath("//item"):
             link = item.find('guid')
             if link is None or link.text is None:
                 continue
-            print link.text
             parts = urlparse.urlsplit(link.text)
             if not parts.path.startswith('/nba'):
+                #print 'REMOVING:', link.text
                 item.getparent().remove(item)
-        return etree.tostring(rss, pretty_print=True, xml_declaration=True,
-                              encoding='UTF-8')
+            ## else:
+            ##     print 'KEEPING: ', link.text
+        output = etree.tostring(rss, pretty_print=True, xml_declaration=True,
+                                encoding='UTF-8')
+        #writefile('/containers/30226/tmp/output.xml', output)
+        return output
 
 
 # WSGI-compatible entry point
@@ -93,7 +109,7 @@ def application(environ, start_response):
         feed = Gazzetta()
     elif path.startswith('/corriere'):
         feed = Corriere()
-    elif path.startswith('/skysport/nba'):
+    elif path.startswith('/skysport/nba2'):
         feed = SkySportNBA()
     else:
         start_response('404 Not Found', [])
