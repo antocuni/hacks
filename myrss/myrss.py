@@ -56,7 +56,10 @@ class GazzettaNBA(Gazzetta):
     ALLOWED_PATHS = ['/nba/', '/basket/nba/']
 
 class GazzettaNoNBA(Gazzetta):
-    FORBIDDEN_PATHS = ['/nba/', '/basket/nba']
+    FORBIDDEN_PATHS = ['/nba/', '/basket/nba', '/fitness/', '/active/', '/comparazione-quote/',
+                       '/esports/', '/gaming/', '/running/', '/salute/', '/motori/', '/social/',
+                       '/calcio/fantanews/', '/calcio/calcio-femminile/', '/montagna/', '/bici/',
+                       '/bocce/',]
 
 class Corriere(FilterHosts):
     URL = 'https://www.corriere.it/rss/homepage.xml'
@@ -96,6 +99,34 @@ class SkySportNBA(AbstractFeed):
         #writefile('/containers/30226/tmp/output.xml', output)
         return output
 
+class Cervinia(AbstractFeed):
+
+    def fetch_and_filter(self):
+        #import textwrap
+        headers = []
+        resp = requests.get('http://cervinia.it')
+        resp.raise_for_status()
+
+        pattern = 'header_banner:"'
+        try:
+            i = resp.content.index(pattern) + len(pattern)
+            j = resp.content.index('"', i)
+        except ValueError:
+            text = 'pattern not found :('
+        else:
+            text = resp.content[i:j]
+
+        #text = textwrap.fill(text, 30)
+        html = """
+        <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          </head>
+          <body>
+            <p>%s</p>
+          </body>
+        </html>""" % text
+        return headers, html
 
 # WSGI-compatible entry point
 def application(environ, start_response):
@@ -111,6 +142,8 @@ def application(environ, start_response):
         feed = Corriere()
     elif path.startswith('/skysport/nba2'):
         feed = SkySportNBA()
+    elif path.startswith('/cervinia'):
+        feed = Cervinia()
     else:
         start_response('404 Not Found', [])
         return ['Not found: %s' % path]
@@ -122,10 +155,11 @@ def application(environ, start_response):
 
 # only useful for debugging/development
 def main():
-    #feed = Gazzetta()
+    feed = GazzettaNoNBA()
     #feed = Corriere()
     #feed = GazzettaNBA()
-    feed = SkySportNBA()
+    #feed = SkySportNBA()
+    #feed = Cervinia()
     headers, content = feed.fetch_and_filter()
     for key, value in headers:
         print '%s: %s' % (key, value)
