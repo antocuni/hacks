@@ -57,7 +57,7 @@ class GazzettaNBA(Gazzetta):
 
 class GazzettaNoNBA(Gazzetta):
     FORBIDDEN_PATHS = ['/nba/', '/basket/nba', '/fitness/', '/active/', '/comparazione-quote/',
-                       '/esports/', '/gaming/', '/running/', '/salute/', '/motori/', '/social/',
+                       '/esports/', '/gaming/', '/running/', '/salute/', '/motori/', '/Motori', '/social/',
                        '/calcio/fantanews/', '/calcio/calcio-femminile/', '/montagna/', '/bici/',
                        '/bocce/',]
 
