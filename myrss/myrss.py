@@ -59,7 +59,7 @@ class GazzettaNoNBA(Gazzetta):
     FORBIDDEN_PATHS = ['/nba/', '/basket/nba', '/fitness/', '/active/', '/comparazione-quote/',
                        '/esports/', '/gaming/', '/running/', '/salute/', '/motori/', '/Motori', '/social/',
                        '/calcio/fantanews/', '/calcio/calcio-femminile/', '/montagna/', '/bici/',
-                       '/bocce/', '/alimentazione/',]
+                       '/bocce/', '/alimentazione/', '/mare/', '/be-active/']
 
 class Corriere(FilterHosts):
     URL = 'https://www.corriere.it/rss/homepage.xml'
