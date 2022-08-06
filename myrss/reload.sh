@@ -1,3 +1,3 @@
 #!/bin/bash
 
-touch ~/vassals/myrss.ini
+touch ~/aws/vassals/myrss.ini
